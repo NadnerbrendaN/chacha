@@ -40,6 +40,13 @@ int main() {
 //	print_matrix(cha_arr);
 	chacha20_block(cha_arr);
 	print_matrix(cha_arr);
+	uint8_t* out = malloc(64);
+	serialize_state(cha_arr, out);
+	for (int i = 0; i < 64; ++i) {
+		printf("%x ", out[i]);
+	}
+	printf("\n");
+	free(out);
 	free(cha_arr);
 	return 0;
 }
