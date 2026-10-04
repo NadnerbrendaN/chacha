@@ -67,8 +67,12 @@ uint32_t rotl(const uint32_t a, const int b) {
 	return ((a << b) | (a >> (32 - b)));
 }
 
-int serialize_state(const uint32_t* state, uint8_t* serialized_output) {
+int serialize_state(const uint32_t* state, uint8_t* octets) {
 	for (int i = 0; i < 16; ++i) {
+		octets[i*4]     = state[i] & 0xff;
+		octets[i*4 + 1] = (state[i] >> 8) & 0xff;
+		octets[i*4 + 2] = (state[i] >> 16) & 0xff;
+		octets[i*4 + 3] = (state[i] >> 24) & 0xff;
 	}
 	return 0;
 }
