@@ -38,7 +38,7 @@ int chacha_block(uint32_t* state, const int rounds) {
 	return 0;
 }
 
-int chacha_init(uint32_t* state, const uint8_t* key, size_t key_length, const uint8_t* nonce, size_t nonce_length) {
+int chacha_init(uint32_t* state, const uint8_t* key, const size_t key_length, const uint8_t* nonce, const size_t nonce_length) {
 	if (!state || !key || !nonce) {
 		return -1;
 	}
