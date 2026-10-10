@@ -1,6 +1,9 @@
 #include "chacha.h"
 
+uint32_t load_uint32_le(const uint8_t* octets);
+void quarter_round(uint32_t* state, const int a, const int b, const int c, const int d);
 uint32_t rotl(const uint32_t a, const int b);
+void set_chacha_constant(uint32_t* state);
 
 int chacha20_block(uint32_t* state) {
 	if (!state) {
@@ -35,32 +38,36 @@ int chacha_block(uint32_t* state, const int rounds) {
 	return 0;
 }
 
-int chacha_init(uint32_t* state, const uint8_t* key, size_t key_length, const uint8_t* counter, size_t counter_length, const uint8_t* nonce, size_t nonce_length) {
-	if (!state || !key || !counter || !nonce) {
+int chacha_init(uint32_t* state, const uint8_t* key, size_t key_length, const uint8_t* nonce, size_t nonce_length) {
+	if (!state || !key || !nonce) {
 		return -1;
 	}
-	if (key_length > 64 || counter_length > 64 || nonce_length > 64) {
+	if (key_length != 32 || nonce_length != 12) {
 		return -1;
 	}
-	if (key_length + counter_length + nonce_length > 64) {
-		return -1;
+	set_chacha_constant(state);
+	for (int i = 0; i < 8; ++i) {
+		state[4 + i] = load_uint32_le(key + i*4);
 	}
-	if (state[0] == 0 && state[1] == 0 && state[2] == 0 && state[3] == 0) {
-		set_chacha_constant(state);
+	state[12] = 1;
+	for (int i = 0; i < 3; ++i) {
+		state[13 + i] = load_uint32_le(nonce + i*4);
 	}
-	/* TODO: Make this actually happen */
 	return 0;
 }
 
-int quarter_round(uint32_t* state, const int a, const int b, const int c, const int d) {
-	if (!state) {
-		return -1;
-	}
+uint32_t load_uint32_le(const uint8_t* octets) { // don't call unless you have four readable bytes at this pointer
+	return ( octets[0]
+			|octets[1] << 8
+			|octets[2] << 16
+			|octets[3] << 24 );
+}
+
+void quarter_round(uint32_t* state, const int a, const int b, const int c, const int d) {
 	state[a] += state[b]; state[d] ^= state[a]; state[d] = rotl(state[d], 16);
 	state[c] += state[d]; state[b] ^= state[c]; state[b] = rotl(state[b], 12);
 	state[a] += state[b]; state[d] ^= state[a]; state[d] = rotl(state[d], 8);
 	state[c] += state[d]; state[b] ^= state[c]; state[b] = rotl(state[b], 7);
-	return 0;
 }
 
 uint32_t rotl(const uint32_t a, const int b) {
@@ -68,6 +75,9 @@ uint32_t rotl(const uint32_t a, const int b) {
 }
 
 int serialize_state(const uint32_t* state, uint8_t* octets) {
+	if (!state || !octets) {
+		return -1;
+	}
 	for (int i = 0; i < 16; ++i) {
 		octets[i*4]     = state[i] & 0xff;
 		octets[i*4 + 1] = (state[i] >> 8) & 0xff;
@@ -77,13 +87,9 @@ int serialize_state(const uint32_t* state, uint8_t* octets) {
 	return 0;
 }
 
-int set_chacha_constant(uint32_t* state){
-	if (!state) {
-		return -1;
-	}
+void set_chacha_constant(uint32_t* state) {
 	state[0] = 0x61707865;
 	state[1] = 0x3320646e;
 	state[2] = 0x79622d32;
 	state[3] = 0x6b206574;
-	return 0;
 }
